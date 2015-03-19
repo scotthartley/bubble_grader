@@ -1,14 +1,18 @@
 #! /usr/bin/env python3
-""" Scantron grader. A simple program that interprets scanned Scantron forms.
+""" Scantron grader. A simple program that interprets scanned Scantron
+forms.
 
-    Arguments:
-        filename: A single input file (jpg or tif format) for processing. Needs to be a standard Scantron form. Scanning
-            works well on photocopier if set to Text/Photo, 200x200 dpi, TIFF (use multipage and then split), standard
-            density (not auto).
+Arguments:
+    filename: A single input file (jpg or tif format) for
+        processing. Needs to be a standard Scantron form. Scanning
+        works well on photocopier if set to Text/Photo, 200x200 dpi,
+        TIFF (use multipage and then split), standard density (not
+        auto).
 
 """
 
-import sys, math
+import sys
+import math
 from PIL import Image, ImageDraw
 from numpy import mean, polyfit, exp, std
 from statistics import mode
@@ -27,18 +31,23 @@ BAR_HALFWIDTH_REL = 0.0085
 # Approximate spacing between calibration bars.
 BAR_SPACING = 0.014
 
+# Minimum width (as fraction of total height) of calibration bars.
+BAR_MIN_HEIGHT = 0.002
+
 # Darkness change threshold for finding markers scanning vertically.
 THRESHOLD = 0.3
 
-# Darkness change threshold for locating the calibration bars when scanning from left edge.
+# Darkness change threshold for locating the calibration bars when
+# scanning from left edge.
 THRESHOLD_CALIB = 0.1
 
-# Darkness above which a bubble will be considered filled, regardless of distance from next darkest point or other
-# factors.
+# Darkness above which a bubble will be considered filled, regardless of
+# distance from next darkest point or other factors.
 FILLED_THRESHOLD = 0.27
 FILLED_THRESHOLD_UNIQUEID = 0.27
 
-# Darkness below which the hand written box for uniqueID will be assumed to be empty.
+# Darkness below which the hand written box for uniqueID will be assumed
+# to be empty.
 UNIQUEID_WRITING_THRESHOLD = 0.01
 
 # Number of std dev between darkest bubble and mean of remaining bubbles.
@@ -151,12 +160,16 @@ def trace_y_calib_bars(img, xloc):
         if intensity_difference(img, (xloc, y), "y") > THRESHOLD:
             y_start = y
             # Jumps forward, in front of calibration bar.
-            y += round(BAR_SPACING * img.size[1])
+            if (y + round(BAR_SPACING*img.size[1])) < img.size[1]:
+                y += round(BAR_SPACING*img.size[1])
+            else:
+                y = img.size[1]
             # Walks back until other edge is found.
             while -intensity_difference(img, (xloc, y), "y") < THRESHOLD:
                 y -= 1
             y_end = y
-            midpoints.append(int((y_start+y_end)/2))
+            if (y_end-y_start)/img.size[1] > BAR_MIN_HEIGHT:
+                midpoints.append(int((y_start+y_end)/2))
             y += 1
         else:
             y += 1
@@ -375,11 +388,10 @@ def get_form_num(scan, x_grid, y_grid):
     bub_sort = sorted(bubble_intensities)
     num_std = ( bub_sort[-1] - bub_sort[-2] ) / std(bub_sort[:-1])
 
-    draw_bubble(scan, x_grid, y_grid, FORM_X + choice*2, FORM_Y)
-
     if num_std < TOLERANCE:
         return "."
     else:
+        draw_bubble(scan, x_grid, y_grid, FORM_X + choice*2, FORM_Y)
         return choice % 2 + 1
 
 
