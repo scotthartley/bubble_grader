@@ -8,6 +8,7 @@ Arguments:
         works well on photocopier if set to Text/Photo, 200x200 dpi,
         TIFF (use multipage and then split), standard density (not
         auto).
+    num_questions: Number of questions in the file.
 
 """
 
@@ -16,6 +17,7 @@ import math
 from PIL import Image, ImageDraw
 from numpy import mean, polyfit, exp, std
 from statistics import mode
+from random import randint
 
 # Number of calibration bars along left edge of form.
 NUM_CALIB_BARS = 63
@@ -406,6 +408,9 @@ def read_scan(filename, num_questions=20):
         x_grid, y_grid = calibrate(scan_fix)
 
         uniqueid = "".join(get_uniqueid(scan_fix, x_grid, y_grid))
+        if len(uniqueid) == 0:
+            uniqueid = "blank{}".format(randint(0,99))
+
         form = get_form_num(scan_fix, x_grid, y_grid)
         
         answers_list = []
