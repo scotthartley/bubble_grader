@@ -53,7 +53,7 @@ FILLED_THRESHOLD_UNIQUEID = 0.27
 UNIQUEID_WRITING_THRESHOLD = 0.01
 
 # Number of std dev between darkest bubble and mean of remaining bubbles.
-TOLERANCE = 3
+TOLERANCE = 5
 UNIQUEID_TOLERANCE = 1
 
 # Radii used to define search zone for spot measurements, relative to total height/width.
@@ -72,7 +72,8 @@ UNIQUEID_Y = 7
 FORM_X = 37
 FORM_Y = 46
 
-SAVE_SIZE = 800, 800
+MARK_COLOR = "rgb(0,120,255)"
+SAVE_SIZE = 1200, 1200
 
 def darkness(rgb):
     """Converts an rgb tuple into a darkness value. Uses a sigmoidal curve to enhance the contrast.
@@ -90,9 +91,9 @@ def darkness(rgb):
     # Defines severity of sigmoidal function. Larger = sharper change to the limits of 0 and 1.
     ENHANCEMENT = 20
     
-    # Converts RGB values to a raw darkness measure. Since grayscale images from scan, no need to emphasize R, G, or B
-    # (all the same). Uses just G and B in case we get a color scanner.
-    raw = 1 - sum(rgb[1:3])/510
+    # Converts RGB values to a raw darkness measure. Only reads the red channel
+    # so as to ignore as much of red form as possible.
+    raw = 1 - rgb[0]/255
 
     # Enhances "contrast" by applying sigmoidal curve.
     adjusted = 1 / (1 + exp(-(raw - CENTER) * ENHANCEMENT))
@@ -275,7 +276,7 @@ def calibrate(scan):
     # Draws the found calibration bars on the image, for future debugging purposes.
     draw_on_img = ImageDraw.Draw(scan)
     for bar in calib_bars_y:
-        draw_on_img.rectangle([bar_loc - TRACE_X_WIDTH*3, bar+1, bar_loc + TRACE_X_WIDTH*3, bar-1], fill="rgb(255,0,0)")
+        draw_on_img.rectangle([bar_loc - TRACE_X_WIDTH*3, bar+1, bar_loc + TRACE_X_WIDTH*3, bar-1], fill=MARK_COLOR)
 
     # Outputs an error if the wrong number of calibration bars found.
     if len(calib_bars_y) != NUM_CALIB_BARS:
@@ -333,13 +334,13 @@ def draw_bubble(img, x_grid, y_grid, x, y):
 
     draw_on_img = ImageDraw.Draw(img)
     draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] + half_side_y, x_grid[x] + 
-                           half_side_x, y_grid[y] + half_side_y + 2], fill="rgb(255,0,0)")
+                           half_side_x, y_grid[y] + half_side_y + 2], fill=MARK_COLOR)
     draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] - half_side_y, x_grid[x] + 
-                           half_side_x, y_grid[y] - half_side_y - 2], fill="rgb(255,0,0)")
+                           half_side_x, y_grid[y] - half_side_y - 2], fill=MARK_COLOR)
     draw_on_img.rectangle([x_grid[x] + half_side_x, y_grid[y] - half_side_y, x_grid[x] + 
-                           half_side_x + 2, y_grid[y] + half_side_y], fill="rgb(255,0,0)")
+                           half_side_x + 2, y_grid[y] + half_side_y], fill=MARK_COLOR)
     draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] + half_side_y, x_grid[x] - 
-                           half_side_x - 2, y_grid[y] - half_side_y], fill="rgb(255,0,0)")
+                           half_side_x - 2, y_grid[y] - half_side_y], fill=MARK_COLOR)
 
 
 def get_uniqueid(scan, x_grid, y_grid):
@@ -375,6 +376,7 @@ def grade_5choice(scan, x_grid, y_grid, startx, starty):
     bub_sort = sorted(bubble_intensities)
     num_std = ( bub_sort[-1] - mean(bub_sort[:-1]) ) / std(bub_sort[:-1])
 
+    # print(num_std) # Useful for calibrating TOLERANCE
 
     if num_std < TOLERANCE or bub_sort[-1] < FILLED_THRESHOLD:
         return "."
