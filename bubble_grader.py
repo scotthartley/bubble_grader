@@ -1,13 +1,11 @@
 #! /usr/bin/env python3
-""" Scantron grader. A simple program that interprets scanned Scantron
-forms.
+""" bubble_grader. A simple program that interprets scanned
+multiple-choice answer sheets.
 
 Arguments:
-    filename: A single input file (jpg or tif format) for
-        processing. Needs to be a standard Scantron form. Scanning
-        works well on photocopier if set to Text/Photo, 200x200 dpi,
-        TIFF (use multipage and then split), standard density (not
-        auto).
+    filename: A single input file (jpg or tif format) for processing. 
+        Scanning works well on photocopier if set to Text/Photo, at
+        least 100 dpi.
     num_questions: Number of questions in the file.
 
 """
@@ -52,15 +50,18 @@ FILLED_THRESHOLD_UNIQUEID = 0.27
 # to be empty.
 UNIQUEID_WRITING_THRESHOLD = 0.01
 
-# Number of std dev between darkest bubble and mean of remaining bubbles.
+# Number of std dev between darkest bubble and mean of remaining
+# bubbles.
 TOLERANCE = 5
 UNIQUEID_TOLERANCE = 1
 
-# Radii used to define search zone for spot measurements, relative to total height/width.
+# Radii used to define search zone for spot measurements, relative to
+# total height/width.
 BUBBLE_RADIUS_X = 0.0069
 BUBBLE_RADIUS_Y = 0.0054
 
-# Distances used to average out when looking for changes in darkness (e.g., on calibration).
+# Distances used to average out when looking for changes in darkness
+# (e.g., on calibration).
 TRACE_Y_WIDTH = 3
 TRACE_X_WIDTH = 6
 
@@ -72,27 +73,33 @@ UNIQUEID_Y = 7
 FORM_X = 37
 FORM_Y = 46
 
+# Color used to annotate the output scan files.
 MARK_COLOR = "rgb(0,120,255)"
+
 SAVE_SIZE = 1200, 1200
 
 def darkness(rgb):
-    """Converts an rgb tuple into a darkness value. Uses a sigmoidal curve to enhance the contrast.
+    """Converts an rgb tuple into a darkness value. Uses a sigmoidal
+    curve to enhance the contrast.
 
     Arguments:
         rgb (tuple): Self-explanatory.
 
     Returns:
-        adjusted (float): A darkness value between 0 (white) and 1 (black).
+        adjusted (float): A darkness value between 0 (white) and 1 
+            (black).
 
     """
-    # Defines center point of sigmoidal function. If x = CENTER, output is 0.5.
+    # Defines center point of sigmoidal function. If x = CENTER, output
+    # is 0.5.
     CENTER = 0.25
 
-    # Defines severity of sigmoidal function. Larger = sharper change to the limits of 0 and 1.
+    # Defines severity of sigmoidal function. Larger = sharper change to
+    # the limits of 0 and 1.
     ENHANCEMENT = 20
     
-    # Converts RGB values to a raw darkness measure. Only reads the red channel
-    # so as to ignore as much of red form as possible.
+    # Converts RGB values to a raw darkness measure. Only reads the red
+    # channel so as to ignore as much of red form as possible.
     raw = 1 - rgb[0]/255
 
     # Enhances "contrast" by applying sigmoidal curve.
@@ -102,8 +109,8 @@ def darkness(rgb):
 
 
 def read_bubble(img, xpix, ypix):
-    """Reads the mean darkness centered on the given coordinates, using the BUBBLE_RADIUS constants as the sides of a
-    square.
+    """Reads the mean darkness centered on the given coordinates, using
+    the BUBBLE_RADIUS constants as the sides of a square.
 
     Arguments:
         img (Image): the image from which the darkness will be read.
@@ -127,21 +134,29 @@ def read_bubble(img, xpix, ypix):
 
 
 def intensity_difference(img, loc, direction):
-    """Determines the difference in intensity between a point and the next point over in either the x or y directions.
-    Sums orthogonally over the ranges defined in the TRACE_X_WIDTH and TRACE_Y_WIDTH parameters.
+    """Determines the difference in intensity between a point and the
+    next point over in either the x or y directions. Sums orthogonally
+    over the ranges defined in the TRACE_X_WIDTH and TRACE_Y_WIDTH
+    parameters.
 
     Arguments:
         img (Image): The image to use.
-        loc (tuple): The base location for the measurement, as an (x,y) tuple, x and y in pixels.
-        direction (string): Either "x" or "y", indicated which direction to step.
+        loc (tuple): The base location for the measurement, as an (x,y)
+            tuple, x and y in pixels. 
+        direction (string): Either "x" or "y", indicated which direction 
+            to step.
 
     """
     if direction == "y":
-        I1 = mean([darkness(img.getpixel((loc[0] + j, loc[1]))) for j in range(-TRACE_X_WIDTH, TRACE_X_WIDTH)])
-        I2 = mean([darkness(img.getpixel((loc[0] + j, loc[1] + 1))) for j in range(-TRACE_X_WIDTH, TRACE_X_WIDTH)])
+        I1 = mean([darkness(img.getpixel((loc[0] + j, loc[1]))) \
+            for j in range(-TRACE_X_WIDTH, TRACE_X_WIDTH)])
+        I2 = mean([darkness(img.getpixel((loc[0] + j, loc[1] + 1))) \
+            for j in range(-TRACE_X_WIDTH, TRACE_X_WIDTH)])
     elif direction == "x":
-        I1 = mean([darkness(img.getpixel((loc[0], loc[1] + j))) for j in range(-TRACE_Y_WIDTH, TRACE_Y_WIDTH)])
-        I2 = mean([darkness(img.getpixel((loc[0] + 1, loc[1] + j))) for j in range(-TRACE_Y_WIDTH, TRACE_Y_WIDTH)])
+        I1 = mean([darkness(img.getpixel((loc[0], loc[1] + j))) \
+            for j in range(-TRACE_Y_WIDTH, TRACE_Y_WIDTH)])
+        I2 = mean([darkness(img.getpixel((loc[0] + 1, loc[1] + j))) \
+            for j in range(-TRACE_Y_WIDTH, TRACE_Y_WIDTH)])
 
     return I2 - I1
 
@@ -154,7 +169,8 @@ def trace_y_calib_bars(img, xloc):
         xloc (int): The location (in pixels) to be scanned down.
 
     Returns:
-        midpoints (list): A list of y coords for the midpoints of the calibration bars.
+        midpoints (list): A list of y coords for the midpoints of the 
+            calibration bars.
 
     """
     midpoints = []
@@ -188,7 +204,8 @@ def trace_x_calib_bars(img, yloc):
         yloc (int): The location (in pixels) to be scanned down.
 
     Returns:
-        midpoints (list): A list of y coords for the midpoints of the calibration bars.
+        midpoints (list): A list of y coords for the midpoints of the 
+            calibration bars.
 
     """
     midpoints = []
@@ -209,7 +226,8 @@ def trace_x_calib_bars(img, yloc):
 
 
 def sum_y(img, xloc):
-    """Determines the average darkness along the entirety of the y axis at xloc.
+    """Determines the average darkness along the entirety of the y axis 
+    at xloc.
 
     Arguments:
         img (Image): The image to be used.
@@ -227,7 +245,8 @@ def sum_y(img, xloc):
 
 
 def find_bars(img):
-    """Locates the calibration bars by counting from left edge of pic. Uses the total sum along y position.
+    """Locates the calibration bars by counting from left edge of pic.
+    Uses the total sum along y position.
 
     Arguments:
         img (Image): The image to be used.
@@ -248,59 +267,62 @@ def find_bars(img):
 
 
 def calibrate(scan):
-    """Finds the calibration bars on the form and returns the x and y grids for locating bubbles.
+    """Finds the calibration bars on the form and returns the x and y
+    grids for locating bubbles.
 
     Arguments:
         scan (Image): The form.
 
     Returns:
-        x_grid (List): List of x coordinates. x_grid[i] gives the x coordinate, in pixels, of grid location i.
+        x_grid (List): List of x coordinates. x_grid[i] gives the x 
+            coordinate, in pixels, of grid location i.
         calib_bars_y (List): Same, but for y coordinates.
 
     """
-    # Locate the x coordinate of the calibration bars down left side of form.
+    # Locate the x coordinate of the calibration bars down left side of
+    # form.
     bar_loc = find_bars(scan)
-    # Locate the calibration bars down and to right. Starts with vertical bonds, then uses first of these to locate the 
-    # horizontal bars.
+    # Locate the calibration bars down and to right. Starts with
+    # vertical bonds, then uses first of these to locate the horizontal
+    # bars.
     calib_bars_y = trace_y_calib_bars(scan, bar_loc)
     calib_bars_x = trace_x_calib_bars(scan, calib_bars_y[0])
 
-    # y_distances = [calib_bars_y[x+1] - calib_bars_y[x] for x in range(len(calib_bars_y) - 1)]
-    # bar_dist = mode(y_distances)
-
-    # to_del = []
-    # for x in range(len(y_distances)-1):
-    #     if (y_distances[x] - bar_dist)/bar_dist > 0.3:
-    #         to_del.append(x)
-
-    # Draws the found calibration bars on the image, for future debugging purposes.
+    # Draws the found calibration bars on the image, for future
+    # debugging purposes.
     draw_on_img = ImageDraw.Draw(scan)
     for bar in calib_bars_y:
-        draw_on_img.rectangle([bar_loc - TRACE_X_WIDTH*3, bar+1, bar_loc + TRACE_X_WIDTH*3, bar-1], fill=MARK_COLOR)
+        draw_on_img.rectangle([bar_loc - TRACE_X_WIDTH*3, bar+1, 
+            bar_loc + TRACE_X_WIDTH*3, bar-1], fill=MARK_COLOR)
 
     # Outputs an error if the wrong number of calibration bars found.
     if len(calib_bars_y) != NUM_CALIB_BARS:
-        print("ERROR: Found {} calibration bars, expected {}.".format(len(calib_bars_y), NUM_CALIB_BARS))
+        print("ERROR: Found {} calibration bars, expected {}.".format(
+            len(calib_bars_y), NUM_CALIB_BARS))
 
-    # The horizontal separation between the bubbles is the separation between the calibration bars on the y axis.
-    # Determined from the separation between the first and last one.
-    bubble_dist = (calib_bars_y[-1] - calib_bars_y[0]) / (len(calib_bars_y) - 1)
+    # The horizontal separation between the bubbles is the separation
+    # between the calibration bars on the y axis. Determined from the
+    # separation between the first and last one.
+    bubble_dist = (calib_bars_y[-1] - calib_bars_y[0]) \
+                   / (len(calib_bars_y) - 1)
 
     # Generates the grid along the x axis.
-    x_grid = [round(calib_bars_x[1] + i * bubble_dist) for i in range(44)]
+    x_grid = [round(calib_bars_x[1] + i * bubble_dist) 
+              for i in range(44)]
 
     return x_grid, calib_bars_y
 
-
 def align_img_angle(scan):
-    """Determines the angle by which to rotate the image in order to straighten it. Uses the location of the calibration
+    """Determines the angle by which to rotate the image in order to
+    straighten it. Uses the location of the calibration
     bars.
 
     Arguments:
         scan (Image): The image of the form.
 
     Returns:
-        rot_angle (float): The angle (in degrees) by which the image must be rotated to straighten it.
+        rot_angle (float): The angle (in degrees) by which the image 
+            must be rotated to straighten it.
 
     """
     # Locate the calibration bars x axis.
@@ -308,7 +330,8 @@ def align_img_angle(scan):
     # Locate the y coords of the calibration bars.
     calib_bars_y = trace_y_calib_bars(scan, bar_loc)
 
-    # Identify the x locations of the edges of the calibration bars. These are used to determine the angle of rotation.
+    # Identify the x locations of the edges of the calibration bars.
+    # These are used to determine the angle of rotation.
     x_locations = []
     for bar in calib_bars_y:
         x = 1
@@ -316,9 +339,11 @@ def align_img_angle(scan):
             x += 1
         x_locations.append(x)
 
-    # The angle is determined only if the difference between the first and last coordinates is above the straighten
-    # threshold. This is necessary because it will rotate by an unreasonable amount if there is little straightening 
-    # needed but it fits to a distribution of points.
+    # The angle is determined only if the difference between the first
+    # and last coordinates is above the straighten threshold. This is
+    # necessary because it will rotate by an unreasonable amount if
+    # there is little straightening needed but it fits to a distribution
+    # of points.
     if abs(x_locations[-1] - x_locations[0]) > STRAIGHTEN_THRESHOLD:
         m, b = polyfit(x_locations, calib_bars_y, 1)
         rot_angle = math.atan(-1/m)/math.pi * 180
@@ -329,47 +354,71 @@ def align_img_angle(scan):
 
 
 def draw_bubble(img, x_grid, y_grid, x, y):
+    """Draws a bubble on the given image at the given location.
+
+    """
     half_side_x = int(BUBBLE_RADIUS_X * img.size[0])
     half_side_y = int(BUBBLE_RADIUS_Y * img.size[1])
 
     draw_on_img = ImageDraw.Draw(img)
-    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] + half_side_y, x_grid[x] + 
-                           half_side_x, y_grid[y] + half_side_y + 2], fill=MARK_COLOR)
-    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] - half_side_y, x_grid[x] + 
-                           half_side_x, y_grid[y] - half_side_y - 2], fill=MARK_COLOR)
-    draw_on_img.rectangle([x_grid[x] + half_side_x, y_grid[y] - half_side_y, x_grid[x] + 
-                           half_side_x + 2, y_grid[y] + half_side_y], fill=MARK_COLOR)
-    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] + half_side_y, x_grid[x] - 
-                           half_side_x - 2, y_grid[y] - half_side_y], fill=MARK_COLOR)
+    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] + 
+                           half_side_y, x_grid[x] + 
+                           half_side_x, y_grid[y] + 
+                           half_side_y + 2], fill=MARK_COLOR)
+    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] - 
+                           half_side_y, x_grid[x] + 
+                           half_side_x, y_grid[y] - 
+                           half_side_y - 2], fill=MARK_COLOR)
+    draw_on_img.rectangle([x_grid[x] + half_side_x, y_grid[y] - 
+                           half_side_y, x_grid[x] + 
+                           half_side_x + 2, y_grid[y] + 
+                           half_side_y], fill=MARK_COLOR)
+    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] + 
+                           half_side_y, x_grid[x] - 
+                           half_side_x - 2, y_grid[y] - 
+                           half_side_y], fill=MARK_COLOR)
 
 
 def get_uniqueid(scan, x_grid, y_grid):
+    """Reads the student's ID from the form.
+
+    """
     uniqueid = []
     for char_num in range(8):
-        bubble_intensities = [read_bubble(scan, x_grid[UNIQUEID_X+char_num], y_grid[UNIQUEID_Y+y]) for y in range(36)]
+        bubble_intensities = [read_bubble(scan, 
+                              x_grid[UNIQUEID_X+char_num], 
+                              y_grid[UNIQUEID_Y+y]) for y in range(36)]
 
         choice = bubble_intensities.index(max(bubble_intensities))
 
         bub_sort = sorted(bubble_intensities)
-        num_std = ( bub_sort[-1] - mean(bub_sort[:-1]) ) / std(bub_sort[:-1])
+        num_std = ( bub_sort[-1] - mean(bub_sort[:-1]) ) / \
+                    std(bub_sort[:-1])
 
-        # print(num_std, read_bubble(scan, x_grid[UNIQUEID_X+char_num], y_grid[UNIQUEID_Y-1]), bub_sort[-2:])
         if num_std < UNIQUEID_TOLERANCE or ( 
-                read_bubble(scan, x_grid[UNIQUEID_X+char_num], y_grid[UNIQUEID_Y-1]) < UNIQUEID_WRITING_THRESHOLD and 
-                bub_sort[-1] < FILLED_THRESHOLD_UNIQUEID ):
+                read_bubble(scan, x_grid[UNIQUEID_X+char_num], 
+                    y_grid[UNIQUEID_Y-1]) < UNIQUEID_WRITING_THRESHOLD 
+                    and bub_sort[-1] < FILLED_THRESHOLD_UNIQUEID ):
             uniqueid.append(" ")
         elif choice > 25:
             uniqueid.append(chr(choice - 26 + ord("0")))
-            draw_bubble(scan, x_grid, y_grid, UNIQUEID_X + char_num, UNIQUEID_Y + choice)
+            draw_bubble(scan, x_grid, y_grid, UNIQUEID_X + char_num, 
+                UNIQUEID_Y + choice)
         else:
             uniqueid.append(chr(choice + ord("A")))
-            draw_bubble(scan, x_grid, y_grid, UNIQUEID_X + char_num, UNIQUEID_Y + choice)
+            draw_bubble(scan, x_grid, y_grid, UNIQUEID_X + char_num, 
+                UNIQUEID_Y + choice)
 
     return uniqueid
 
 
 def grade_5choice(scan, x_grid, y_grid, startx, starty):
-    bubble_intensities = [read_bubble(scan, x_grid[x], y_grid[starty]) for x in range(startx, startx + 5)]
+    """Grades a 5-choice MC question.
+
+
+    """
+    bubble_intensities = [read_bubble(scan, x_grid[x], y_grid[starty]) \
+        for x in range(startx, startx + 5)]
 
     choice = bubble_intensities.index(max(bubble_intensities))
 
@@ -386,7 +435,11 @@ def grade_5choice(scan, x_grid, y_grid, startx, starty):
 
 
 def get_form_num(scan, x_grid, y_grid):
-    bubble_intensities = [read_bubble(scan, x_grid[x], y_grid[FORM_Y]) for x in range(FORM_X, FORM_X + 8, 2)]
+    """Reads the form number.
+
+    """
+    bubble_intensities = [read_bubble(scan, x_grid[x], y_grid[FORM_Y]) 
+        for x in range(FORM_X, FORM_X + 8, 2)]
 
     choice = bubble_intensities.index(max(bubble_intensities))
     bub_sort = sorted(bubble_intensities)
@@ -399,7 +452,7 @@ def get_form_num(scan, x_grid, y_grid):
         return choice % 2 + 1
 
 
-def read_scan(filename, num_questions=20):
+def read_scan(filename, num_questions):
     with Image.open(filename) as scan:
         scan_conv = scan.convert('RGBA')
         rot_angle = align_img_angle(scan_conv)
@@ -423,7 +476,8 @@ def read_scan(filename, num_questions=20):
                 max_row = num_questions % Q_PER_COL
 
             for row in range(max_row):
-                answers_list.append(str(grade_5choice(scan_fix, x_grid, y_grid, 2 + 9*column, 23 + 2*row)))
+                answers_list.append(str(grade_5choice(scan_fix, x_grid, 
+                    y_grid, 2 + 9*column, 23 + 2*row)))
 
         q_answers = "".join(answers_list)
 
