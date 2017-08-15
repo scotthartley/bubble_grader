@@ -12,6 +12,8 @@ Arguments:
 
 import sys
 import math
+import random
+import string
 from PIL import Image, ImageDraw
 from numpy import mean, polyfit, exp, std
 from statistics import mode
@@ -449,7 +451,7 @@ def get_form_num(scan, x_grid, y_grid):
         return "."
     else:
         draw_bubble(scan, x_grid, y_grid, FORM_X + choice*2, FORM_Y)
-        return choice % 2 + 1
+        return choice + 1
 
 
 def read_scan(filename, num_questions):
@@ -481,11 +483,18 @@ def read_scan(filename, num_questions):
 
         q_answers = "".join(answers_list)
 
-        print("{} {}{}".format(uniqueid, form, q_answers))
+        # Check for non-blank uniqueid
+        if ''.join(uniqueid).strip():
+            identifier = ''.join(uniqueid).strip()
+        else:
+            identifier = ''.join(["??"] + random.choices(
+                string.ascii_uppercase + string.digits, k=6))
+
+        print("{:8} {}{}".format(identifier, form, q_answers))
 
         scan_tosave = scan_fix.convert('RGB')
         scan_tosave.thumbnail(SAVE_SIZE)
-        scan_tosave.save('{}.jpg'.format("".join(uniqueid).strip()))
+        scan_tosave.save('{}.jpg'.format("".join(identifier).strip()))
 
 
 if __name__ == '__main__':
