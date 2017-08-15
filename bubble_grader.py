@@ -483,7 +483,7 @@ def read_scan(filename, num_questions):
 
         print("{} {}{}".format(uniqueid, form, q_answers))
 
-        scan_tosave = scan_fix.copy()
+        scan_tosave = scan_fix.convert('RGB')
         scan_tosave.thumbnail(SAVE_SIZE)
         scan_tosave.save('{}.jpg'.format("".join(uniqueid).strip()))
 
