@@ -8,6 +8,10 @@ bubble_grader is a Python 3 script that takes a scanned image of a multiple-choi
 - [Numpy](http://www.numpy.org)
 - [Pillow](https://pypi.python.org/pypi/Pillow/)
 
+## Installation
+
+Install via setup.py or through the dist.
+
 ## Use
 
 As long as the script is executable, it's simply a matter of passing the filename of the image to be analyzed followed by the number of questions as command-line arguments. The output of the program is a list of responses (to stdout), and a jpg image of the scanned form labeled with the ID of the student and with the recognized bubbles highlighted. This makes it easier to check for errors (which do occasionally occur if the markings are too faint or there are extraneous marks on the paper).

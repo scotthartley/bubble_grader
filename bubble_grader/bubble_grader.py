@@ -1,9 +1,8 @@
-#! /usr/bin/env python3
 """ bubble_grader. A simple program that interprets scanned
 multiple-choice answer sheets.
 
 Arguments:
-    filename: A single input file (jpg or tif format) for processing. 
+    filename: A single input file (jpg or tif format) for processing.
         Scanning works well on photocopier if set to Text/Photo, at
         least 100 dpi.
     num_questions: Number of questions in the file.
@@ -16,8 +15,6 @@ import random
 import string
 from PIL import Image, ImageDraw
 from numpy import mean, polyfit, exp, std
-from statistics import mode
-from random import randint
 
 # Number of calibration bars along left edge of form.
 NUM_CALIB_BARS = 63
@@ -88,7 +85,7 @@ def darkness(rgb):
         rgb (tuple): Self-explanatory.
 
     Returns:
-        adjusted (float): A darkness value between 0 (white) and 1 
+        adjusted (float): A darkness value between 0 (white) and 1
             (black).
 
     """
@@ -99,7 +96,7 @@ def darkness(rgb):
     # Defines severity of sigmoidal function. Larger = sharper change to
     # the limits of 0 and 1.
     ENHANCEMENT = 20
-    
+
     # Converts RGB values to a raw darkness measure. Only reads the red
     # channel so as to ignore as much of red form as possible.
     raw = 1 - rgb[0]/255
@@ -144,8 +141,8 @@ def intensity_difference(img, loc, direction):
     Arguments:
         img (Image): The image to use.
         loc (tuple): The base location for the measurement, as an (x,y)
-            tuple, x and y in pixels. 
-        direction (string): Either "x" or "y", indicated which direction 
+            tuple, x and y in pixels.
+        direction (string): Either "x" or "y", indicated which direction
             to step.
 
     """
@@ -171,7 +168,7 @@ def trace_y_calib_bars(img, xloc):
         xloc (int): The location (in pixels) to be scanned down.
 
     Returns:
-        midpoints (list): A list of y coords for the midpoints of the 
+        midpoints (list): A list of y coords for the midpoints of the
             calibration bars.
 
     """
@@ -206,7 +203,7 @@ def trace_x_calib_bars(img, yloc):
         yloc (int): The location (in pixels) to be scanned down.
 
     Returns:
-        midpoints (list): A list of y coords for the midpoints of the 
+        midpoints (list): A list of y coords for the midpoints of the
             calibration bars.
 
     """
@@ -228,7 +225,7 @@ def trace_x_calib_bars(img, yloc):
 
 
 def sum_y(img, xloc):
-    """Determines the average darkness along the entirety of the y axis 
+    """Determines the average darkness along the entirety of the y axis
     at xloc.
 
     Arguments:
@@ -276,7 +273,7 @@ def calibrate(scan):
         scan (Image): The form.
 
     Returns:
-        x_grid (List): List of x coordinates. x_grid[i] gives the x 
+        x_grid (List): List of x coordinates. x_grid[i] gives the x
             coordinate, in pixels, of grid location i.
         calib_bars_y (List): Same, but for y coordinates.
 
@@ -294,7 +291,7 @@ def calibrate(scan):
     # debugging purposes.
     draw_on_img = ImageDraw.Draw(scan)
     for bar in calib_bars_y:
-        draw_on_img.rectangle([bar_loc - TRACE_X_WIDTH*3, bar+1, 
+        draw_on_img.rectangle([bar_loc - TRACE_X_WIDTH*3, bar+1,
             bar_loc + TRACE_X_WIDTH*3, bar-1], fill=MARK_COLOR)
 
     # Outputs an error if the wrong number of calibration bars found.
@@ -309,7 +306,7 @@ def calibrate(scan):
                    / (len(calib_bars_y) - 1)
 
     # Generates the grid along the x axis.
-    x_grid = [round(calib_bars_x[1] + i * bubble_dist) 
+    x_grid = [round(calib_bars_x[1] + i * bubble_dist)
               for i in range(44)]
 
     return x_grid, calib_bars_y
@@ -323,7 +320,7 @@ def align_img_angle(scan):
         scan (Image): The image of the form.
 
     Returns:
-        rot_angle (float): The angle (in degrees) by which the image 
+        rot_angle (float): The angle (in degrees) by which the image
             must be rotated to straighten it.
 
     """
@@ -363,21 +360,21 @@ def draw_bubble(img, x_grid, y_grid, x, y):
     half_side_y = int(BUBBLE_RADIUS_Y * img.size[1])
 
     draw_on_img = ImageDraw.Draw(img)
-    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] + 
-                           half_side_y, x_grid[x] + 
-                           half_side_x, y_grid[y] + 
+    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] +
+                           half_side_y, x_grid[x] +
+                           half_side_x, y_grid[y] +
                            half_side_y + 2], fill=MARK_COLOR)
-    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] - 
-                           half_side_y, x_grid[x] + 
-                           half_side_x, y_grid[y] - 
+    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] -
+                           half_side_y, x_grid[x] +
+                           half_side_x, y_grid[y] -
                            half_side_y - 2], fill=MARK_COLOR)
-    draw_on_img.rectangle([x_grid[x] + half_side_x, y_grid[y] - 
-                           half_side_y, x_grid[x] + 
-                           half_side_x + 2, y_grid[y] + 
+    draw_on_img.rectangle([x_grid[x] + half_side_x, y_grid[y] -
+                           half_side_y, x_grid[x] +
+                           half_side_x + 2, y_grid[y] +
                            half_side_y], fill=MARK_COLOR)
-    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] + 
-                           half_side_y, x_grid[x] - 
-                           half_side_x - 2, y_grid[y] - 
+    draw_on_img.rectangle([x_grid[x] - half_side_x, y_grid[y] +
+                           half_side_y, x_grid[x] -
+                           half_side_x - 2, y_grid[y] -
                            half_side_y], fill=MARK_COLOR)
 
 
@@ -387,8 +384,8 @@ def get_uniqueid(scan, x_grid, y_grid):
     """
     uniqueid = []
     for char_num in range(8):
-        bubble_intensities = [read_bubble(scan, 
-                              x_grid[UNIQUEID_X+char_num], 
+        bubble_intensities = [read_bubble(scan,
+                              x_grid[UNIQUEID_X+char_num],
                               y_grid[UNIQUEID_Y+y]) for y in range(36)]
 
         choice = bubble_intensities.index(max(bubble_intensities))
@@ -397,18 +394,18 @@ def get_uniqueid(scan, x_grid, y_grid):
         num_std = ( bub_sort[-1] - mean(bub_sort[:-1]) ) / \
                     std(bub_sort[:-1])
 
-        if num_std < UNIQUEID_TOLERANCE or ( 
-                read_bubble(scan, x_grid[UNIQUEID_X+char_num], 
-                    y_grid[UNIQUEID_Y-1]) < UNIQUEID_WRITING_THRESHOLD 
+        if num_std < UNIQUEID_TOLERANCE or (
+                read_bubble(scan, x_grid[UNIQUEID_X+char_num],
+                    y_grid[UNIQUEID_Y-1]) < UNIQUEID_WRITING_THRESHOLD
                     and bub_sort[-1] < FILLED_THRESHOLD_UNIQUEID ):
             uniqueid.append(" ")
         elif choice > 25:
             uniqueid.append(chr(choice - 26 + ord("0")))
-            draw_bubble(scan, x_grid, y_grid, UNIQUEID_X + char_num, 
+            draw_bubble(scan, x_grid, y_grid, UNIQUEID_X + char_num,
                 UNIQUEID_Y + choice)
         else:
             uniqueid.append(chr(choice + ord("A")))
-            draw_bubble(scan, x_grid, y_grid, UNIQUEID_X + char_num, 
+            draw_bubble(scan, x_grid, y_grid, UNIQUEID_X + char_num,
                 UNIQUEID_Y + choice)
 
     return uniqueid
@@ -440,7 +437,7 @@ def get_form_num(scan, x_grid, y_grid):
     """Reads the form number.
 
     """
-    bubble_intensities = [read_bubble(scan, x_grid[x], y_grid[FORM_Y]) 
+    bubble_intensities = [read_bubble(scan, x_grid[x], y_grid[FORM_Y])
         for x in range(FORM_X, FORM_X + 8, 2)]
 
     choice = bubble_intensities.index(max(bubble_intensities))
@@ -466,10 +463,10 @@ def read_scan(filename, num_questions):
 
         uniqueid = "".join(get_uniqueid(scan_fix, x_grid, y_grid))
         if len(uniqueid) == 0:
-            uniqueid = "blank{}".format(randint(0,99))
+            uniqueid = "blank{}".format(random.randint(0,99))
 
         form = get_form_num(scan_fix, x_grid, y_grid)
-        
+
         answers_list = []
         for column in range(((num_questions - 1) // Q_PER_COL) + 1):
             if (column + 1)*Q_PER_COL <= num_questions:
@@ -478,7 +475,7 @@ def read_scan(filename, num_questions):
                 max_row = num_questions % Q_PER_COL
 
             for row in range(max_row):
-                answers_list.append(str(grade_5choice(scan_fix, x_grid, 
+                answers_list.append(str(grade_5choice(scan_fix, x_grid,
                     y_grid, 2 + 9*column, 23 + 2*row)))
 
         q_answers = "".join(answers_list)
@@ -497,6 +494,5 @@ def read_scan(filename, num_questions):
         scan_tosave.save('{}.jpg'.format("".join(identifier).strip()))
 
 
-if __name__ == '__main__':
+def main():
     read_scan(sys.argv[1], int(sys.argv[2]))
-
