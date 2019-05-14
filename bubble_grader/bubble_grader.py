@@ -52,7 +52,7 @@ UNIQUEID_WRITING_THRESHOLD = 0.01
 # Number of std dev between darkest bubble and mean of remaining
 # bubbles.
 TOLERANCE = 3
-UNIQUEID_TOLERANCE = 1
+UNIQUEID_TOLERANCE = 4
 
 # Radii used to define search zone for spot measurements, relative to
 # total height/width.

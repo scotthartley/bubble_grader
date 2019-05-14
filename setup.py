@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name="bubble_grader",
-      version=1.0,
+      version=1.1,
       description=("Grade scanned MC exam sheets."),
       long_description=readme(),
       author="Scott Hartley",
